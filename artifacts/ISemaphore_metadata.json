@@ -1,0 +1,139 @@
+{
+	"compiler": {
+		"version": "0.8.20+commit.a1b79de6"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "groupId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "identityCommitment",
+						"type": "uint256"
+					}
+				],
+				"name": "addMember",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "admin",
+						"type": "address"
+					}
+				],
+				"name": "createGroup",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "groupId",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "groupId",
+						"type": "uint256"
+					},
+					{
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "merkleTreeDepth",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "merkleTreeRoot",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "nullifier",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "message",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "scope",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256[8]",
+								"name": "points",
+								"type": "uint256[8]"
+							}
+						],
+						"internalType": "struct ISemaphore.SemaphoreProof",
+						"name": "proof",
+						"type": "tuple"
+					}
+				],
+				"name": "verifyProof",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"src.sol": "ISemaphore"
+		},
+		"evmVersion": "shanghai",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"src.sol": {
+			"keccak256": "0x5fccd96618d0ecc09f9287dbe126e16cfd980a5b5f3304209e961c22bb8228a6",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://84ecec8b99a5f96a73c8bd318debd369dc3e820f71b134625a62a32bb5b0293c",
+				"dweb:/ipfs/QmSKoSGZf2xrb17eBtdk9Lw7xVhsCWpkLdUyDNm1KQ7mvB"
+			]
+		}
+	},
+	"version": 1
+}
