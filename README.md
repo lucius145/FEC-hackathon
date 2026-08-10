@@ -5,8 +5,7 @@ Private, milestone-based grant escrow for anonymous academic & DAO bounties. Bui
 
 - **Live demo:** `<link>`
 - **Demo video:** `<link>`
-- **Slides:** `<link>`
-- **Contract (Sepolia):** `<address>`
+- **Contract (Sepolia):** `0xBB8A82De585515789E848C2E90870ded5660D5e6`
 
 ## Problem
 
