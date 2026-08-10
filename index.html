@@ -170,8 +170,16 @@
     </div>
 
     <script type="module">
-        
+        // Some ZK libraries (via Semaphore's dependencies) expect a Node-style
+        // `global`, which browsers don't have. Cheap, harmless insurance.
         if (typeof window.global === "undefined") window.global = window;
+
+        // Only ethers is imported statically. Wallet connection must work
+        // even if the Semaphore library below fails to load — it's a much
+        // heavier package (pulls in snarkjs and WASM) and CDN resolution
+        // for it can fail in ways plain ethers won't. Semaphore is loaded
+        // lazily, only inside the functions that actually need it, so a
+        // problem there can't take down Connect Wallet or anything else.
         import { BrowserProvider, Contract, formatEther, parseEther } from "https://esm.sh/ethers@6.7.0";
 
         let semaphoreLib = null;
@@ -188,9 +196,33 @@
 
         let provider, signer, contract, identity;
 
-        
-        const CONTRACT_ADDRESS = "0xBB8A82De585515789E848C2E90870ded5660D5e6";
+        // Update with your deployed contract address.
+        const CONTRACT_ADDRESS = "0xYourDeployedContractAddressHere";
 
+        // Set this to the block your contract was deployed at (check the
+        // contract's "Contract Creation" transaction on Sepolia Etherscan).
+        // Querying events from block 0 scans the whole chain and trips the
+        // 10,000-block range limit most public RPC endpoints enforce.
+        const DEPLOYMENT_BLOCK = 0; // TODO: replace with your real deployment block
+
+        // Splits a log query into chunks small enough for RPC providers
+        // that cap eth_getLogs to a limited block range (commonly 10,000).
+        // Falls back to this even if DEPLOYMENT_BLOCK is set correctly, so
+        // the app doesn't break again once enough blocks have passed.
+        const MAX_LOG_RANGE = 9999;
+        async function queryFilterChunked(filter, fromBlock = DEPLOYMENT_BLOCK) {
+            const latest = await provider.getBlockNumber();
+            let events = [];
+            for (let start = fromBlock; start <= latest; start += MAX_LOG_RANGE + 1) {
+                const end = Math.min(start + MAX_LOG_RANGE, latest);
+                const chunk = await contract.queryFilter(filter, start, end);
+                events = events.concat(chunk);
+            }
+            return events;
+        }
+
+        // Matches BlindGrantEscrow.sol exactly. submitWork's second argument
+        // is the SemaphoreProof struct as a tuple.
         const CONTRACT_ABI = [
             "function createGrant(string memory _metadataURI) external payable returns (uint256)",
             "function joinGrantGroup(uint256 _grantId, uint256 _identityCommitment) external",
@@ -205,6 +237,10 @@
 
         const STATUS_LABELS = ["Created", "Work Submitted", "Completed", "Cancelled"];
 
+        // The circuit is compiled per Merkle depth, and each depth has its
+        // own multi-megabyte proving key. Pin it so the browser doesn't
+        // silently fetch a new key whenever a group crosses a power of two.
+        // Depth 12 covers 4096 members, same choice as the Semaphore guide.
         const DEPTH = 12;
         const ARTIFACTS = {
             wasm: "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-12.wasm",
@@ -355,7 +391,7 @@
                 // GrantCreated only tells us what a grant looked like at
                 // creation time, not its current status, so we re-check
                 // each one with getGrant before deciding whether to show it.
-                const events = await contract.queryFilter(contract.filters.GrantCreated());
+                const events = await queryFilterChunked(contract.filters.GrantCreated());
                 if (events.length === 0) {
                     listEl.innerHTML = '<p class="text-gray-500 text-sm">No grants have been created yet.</p>';
                     return;
@@ -511,7 +547,7 @@
                 // guide rebuilds it from getMembers().
                 const grant = await contract.getGrant(grantId);
                 const filter = contract.filters.WorkerJoined(grantId);
-                const events = await contract.queryFilter(filter);
+                const events = await queryFilterChunked(filter);
                 const commitments = events.map((e) => e.args.identityCommitment);
                 const group = new Group(commitments);
 
