@@ -3,8 +3,8 @@
 
 Private, milestone-based grant escrow for anonymous academic & DAO bounties. Built for the Road to Devcon Hackathon — DeFi Vertical, Finance and Economics Club, IIT Guwahati.
 
-- **Live demo:** `https://lucius145.github.io/FEC-hackathon/index.html`
-- **Demo video:** `<link>`
+- **Live demo:** <https://lucius145.github.io/FEC-hackathon/index.html>
+- **Demo video:** <https://drive.google.com/drive/folders/1i9jvuMWvqo4bldMx3-uTS00eW8WLfFfS?usp=sharing>
 - **Contract (Sepolia):** `0xBB8A82De585515789E848C2E90870ded5660D5e6`
 
 ## Problem
