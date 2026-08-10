@@ -170,16 +170,8 @@
     </div>
 
     <script type="module">
-        // Some ZK libraries (via Semaphore's dependencies) expect a Node-style
-        // `global`, which browsers don't have. Cheap, harmless insurance.
+        
         if (typeof window.global === "undefined") window.global = window;
-
-        // Only ethers is imported statically. Wallet connection must work
-        // even if the Semaphore library below fails to load — it's a much
-        // heavier package (pulls in snarkjs and WASM) and CDN resolution
-        // for it can fail in ways plain ethers won't. Semaphore is loaded
-        // lazily, only inside the functions that actually need it, so a
-        // problem there can't take down Connect Wallet or anything else.
         import { BrowserProvider, Contract, formatEther, parseEther } from "https://esm.sh/ethers@6.7.0";
 
         let semaphoreLib = null;
@@ -196,11 +188,9 @@
 
         let provider, signer, contract, identity;
 
-        // Update with your deployed contract address.
-        const CONTRACT_ADDRESS = "0xYourDeployedContractAddressHere";
+        
+        const CONTRACT_ADDRESS = "0xBB8A82De585515789E848C2E90870ded5660D5e6";
 
-        // Matches BlindGrantEscrow.sol exactly. submitWork's second argument
-        // is the SemaphoreProof struct as a tuple.
         const CONTRACT_ABI = [
             "function createGrant(string memory _metadataURI) external payable returns (uint256)",
             "function joinGrantGroup(uint256 _grantId, uint256 _identityCommitment) external",
@@ -215,10 +205,6 @@
 
         const STATUS_LABELS = ["Created", "Work Submitted", "Completed", "Cancelled"];
 
-        // The circuit is compiled per Merkle depth, and each depth has its
-        // own multi-megabyte proving key. Pin it so the browser doesn't
-        // silently fetch a new key whenever a group crosses a power of two.
-        // Depth 12 covers 4096 members, same choice as the Semaphore guide.
         const DEPTH = 12;
         const ARTIFACTS = {
             wasm: "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-12.wasm",
