@@ -28,13 +28,68 @@
 			},
 			{
 				"inputs": [],
+				"name": "InvalidGrantStatus",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "InvalidMessage",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "InvalidPayoutAddress",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "InvalidScope",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NotSponsor",
+				"type": "error"
+			},
+			{
+				"inputs": [],
 				"name": "NullifierAlreadyUsed",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "ReentrantCall",
 				"type": "error"
 			},
 			{
 				"inputs": [],
 				"name": "TransferFailed",
 				"type": "error"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "grantId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "sponsor",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "GrantCancelled",
+				"type": "event"
 			},
 			{
 				"anonymous": false,
@@ -100,6 +155,19 @@
 						"internalType": "uint256",
 						"name": "grantId",
 						"type": "uint256"
+					}
+				],
+				"name": "WorkRejected",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "grantId",
+						"type": "uint256"
 					},
 					{
 						"indexed": false,
@@ -139,6 +207,19 @@
 					}
 				],
 				"name": "approvePayout",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_grantId",
+						"type": "uint256"
+					}
+				],
+				"name": "cancelGrant",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -201,6 +282,11 @@
 						"internalType": "address",
 						"name": "workerPayoutAddress",
 						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "proofMessage",
+						"type": "string"
 					}
 				],
 				"stateMutability": "view",
@@ -220,6 +306,19 @@
 					}
 				],
 				"name": "joinGrantGroup",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_grantId",
+						"type": "uint256"
+					}
+				],
+				"name": "rejectWork",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -285,6 +384,11 @@
 						"internalType": "address",
 						"name": "_payoutAddress",
 						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "_workProofURI",
+						"type": "string"
 					}
 				],
 				"name": "submitWork",
@@ -340,11 +444,11 @@
 	},
 	"sources": {
 		"src.sol": {
-			"keccak256": "0x68d51494e37eae0f23892914b9d2394716339230651bf46e4ae415f381f5ec3b",
+			"keccak256": "0x975694b4ac499290da922ee9af4bee258a0eb03f445eb1913847db8f6da79e23",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://08ed5c59878f3a1e91094a9d4b2a6a1fe566cda1eb0a71ec8b3de6477e21e61a",
-				"dweb:/ipfs/QmWP8TKU6yurPwjdHcb2DTU23yGf5Q8cNrxHs2pKqqTqkT"
+				"bzz-raw://e4618716a55c19f111c47bee0a7060dc7bfa0bbde28a54f67fceaa9e360533a7",
+				"dweb:/ipfs/QmSw86xAZkFtzRdK79RMjLVs3sdrqgWvPcgQs5Mj5KePyJ"
 			]
 		}
 	},

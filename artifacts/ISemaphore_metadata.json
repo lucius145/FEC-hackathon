@@ -24,13 +24,7 @@
 				"type": "function"
 			},
 			{
-				"inputs": [
-					{
-						"internalType": "address",
-						"name": "admin",
-						"type": "address"
-					}
-				],
+				"inputs": [],
 				"name": "createGroup",
 				"outputs": [
 					{
@@ -87,14 +81,8 @@
 						"type": "tuple"
 					}
 				],
-				"name": "verifyProof",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "",
-						"type": "bool"
-					}
-				],
+				"name": "validateProof",
+				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			}
@@ -127,11 +115,11 @@
 	},
 	"sources": {
 		"src.sol": {
-			"keccak256": "0x68d51494e37eae0f23892914b9d2394716339230651bf46e4ae415f381f5ec3b",
+			"keccak256": "0x975694b4ac499290da922ee9af4bee258a0eb03f445eb1913847db8f6da79e23",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://08ed5c59878f3a1e91094a9d4b2a6a1fe566cda1eb0a71ec8b3de6477e21e61a",
-				"dweb:/ipfs/QmWP8TKU6yurPwjdHcb2DTU23yGf5Q8cNrxHs2pKqqTqkT"
+				"bzz-raw://e4618716a55c19f111c47bee0a7060dc7bfa0bbde28a54f67fceaa9e360533a7",
+				"dweb:/ipfs/QmSw86xAZkFtzRdK79RMjLVs3sdrqgWvPcgQs5Mj5KePyJ"
 			]
 		}
 	},

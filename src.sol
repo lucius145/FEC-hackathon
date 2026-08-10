@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 //default interface to implement semaphore
 interface ISemaphore {
-    function createGroup(address admin) external returns (uint256 groupId);
+    function createGroup() external returns (uint256 groupId);
     function addMember(uint256 groupId, uint256 identityCommitment) external;
-    function verifyProof(uint256 groupId, SemaphoreProof calldata proof) external returns (bool);
+    function validateProof(uint256 groupId, SemaphoreProof calldata proof) external;
 }
 
 struct SemaphoreProof {
@@ -24,18 +24,24 @@ contract BlindGrantEscrow {
     error GrantNotFound();
     error NullifierAlreadyUsed();
     error TransferFailed();
+    error InvalidGrantStatus();
+    error NotSponsor();
+    error InvalidScope();
+    error InvalidMessage();
+    error InvalidPayoutAddress();
+    error ReentrantCall();
 
     ISemaphore public immutable semaphore;
 
     //states to define grant status
-    enum GrantStatus { Created, WorkSubmitted, Completed }
+    enum GrantStatus { Created, WorkSubmitted, Completed, Cancelled }
 
     //data structure to implement a grant
     struct Grant {
         address payable sponsor;
         uint256 amount;
         uint256 groupId;
-        string metadataURI; // Task brief or IPFS link provided by sponsor
+        string metadataURI; // Task brief provided by sponsor
         GrantStatus status;
         string proofMessage;
         address workerPayoutAddress;
@@ -47,6 +53,8 @@ contract BlindGrantEscrow {
 
     mapping(uint256 => bool) public usedNullifiers;
 
+    bool private locked;
+
     event GrantCreated(
         uint256 indexed grantId,
         address indexed sponsor,
@@ -56,7 +64,16 @@ contract BlindGrantEscrow {
     );
     event WorkerJoined(uint256 indexed grantId, uint256 identityCommitment);
     event WorkSubmitted(uint256 indexed grantId, uint256 nullifier);
+    event WorkRejected(uint256 indexed grantId);
     event GrantCompleted(uint256 indexed grantId, address payoutAddress);
+    event GrantCancelled(uint256 indexed grantId, address sponsor, uint256 amount);
+
+    modifier nonReentrant() {
+        if (locked) revert ReentrantCall();
+        locked = true;
+        _;
+        locked = false;
+    }
 
     //to initialize semaphore by providing on chain address of semaphore V4
     constructor(address _semaphoreAddress) {
@@ -65,10 +82,11 @@ contract BlindGrantEscrow {
 
     //function to create a new grant 
     function createGrant(string memory _metadataURI) external payable returns (uint256) {
-        require(msg.value > 0, "Grant amount must be greater than 0");
+        if (msg.value == 0) revert InvalidAmount();
 
         grantCount++;
-        uint256 newGroupId = semaphore.createGroup(address(this));
+        
+        uint256 newGroupId = semaphore.createGroup();
 
         grants[grantCount] = Grant({
             sponsor: payable(msg.sender),
@@ -87,8 +105,8 @@ contract BlindGrantEscrow {
     //function to enable workers to join a grant group
     function joinGrantGroup(uint256 _grantId, uint256 _identityCommitment) external {
         Grant storage grant = grants[_grantId];
-        require(grant.amount > 0, "Grant does not exist");
-        require(grant.status == GrantStatus.Created, "Grant not accepting registrations");
+        if (grant.amount == 0) revert GrantNotFound();
+        if (grant.status != GrantStatus.Created) revert InvalidGrantStatus();
 
         semaphore.addMember(grant.groupId, _identityCommitment);
         emit WorkerJoined(_grantId, _identityCommitment);
@@ -98,33 +116,76 @@ contract BlindGrantEscrow {
     function submitWork(
         uint256 _grantId,
         SemaphoreProof calldata _proof,
-        address _payoutAddress
+        address _payoutAddress,
+        string calldata _workProofURI
     ) external {
         Grant storage grant = grants[_grantId];
-        require(grant.status == GrantStatus.Created, "Grant not accepting submissions");
-        require(!usedNullifiers[_proof.nullifier], "Proof already used");
+        if (grant.amount == 0) revert GrantNotFound();
+        if (grant.status != GrantStatus.Created) revert InvalidGrantStatus();
+        if (_payoutAddress == address(0)) revert InvalidPayoutAddress();
+        if (usedNullifiers[_proof.nullifier]) revert NullifierAlreadyUsed();
 
-        bool isValid = semaphore.verifyProof(grant.groupId, _proof);
-        require(isValid, "Invalid Semaphore ZK Proof");
+        if (_proof.scope != grant.groupId) revert InvalidScope();
+
+        if (_proof.message != uint256(uint160(_payoutAddress))) revert InvalidMessage();
+
+        semaphore.validateProof(grant.groupId, _proof);
 
         usedNullifiers[_proof.nullifier] = true;
         grant.workerPayoutAddress = _payoutAddress;
+        grant.proofMessage = _workProofURI;
         grant.status = GrantStatus.WorkSubmitted;
 
         emit WorkSubmitted(_grantId, _proof.nullifier);
     }
 
     //function to transfer funds(eth originally spent by the sponsor)
-    function approvePayout(uint256 _grantId) external {
+    function approvePayout(uint256 _grantId) external nonReentrant {
         Grant storage grant = grants[_grantId];
-        require(msg.sender == grant.sponsor, "Only sponsor can approve");
-        require(grant.status == GrantStatus.WorkSubmitted, "No work submitted yet");
+        if (grant.amount == 0) revert GrantNotFound();
+        if (msg.sender != grant.sponsor) revert NotSponsor();
+        if (grant.status != GrantStatus.WorkSubmitted) revert InvalidGrantStatus();
+
+        uint256 payoutAmount = grant.amount;
+        address payoutAddress = grant.workerPayoutAddress;
 
         grant.status = GrantStatus.Completed;
-        (bool success, ) = payable(grant.workerPayoutAddress).call{value: grant.amount}("");
+        grant.amount = 0;
+
+        (bool success, ) = payable(payoutAddress).call{value: payoutAmount}("");
         if (!success) revert TransferFailed();
 
-        emit GrantCompleted(_grantId, grant.workerPayoutAddress);
+        emit GrantCompleted(_grantId, payoutAddress);
+    }
+
+    function rejectWork(uint256 _grantId) external {
+        Grant storage grant = grants[_grantId];
+        if (grant.amount == 0) revert GrantNotFound();
+        if (msg.sender != grant.sponsor) revert NotSponsor();
+        if (grant.status != GrantStatus.WorkSubmitted) revert InvalidGrantStatus();
+
+        grant.status = GrantStatus.Created;
+        grant.workerPayoutAddress = address(0);
+        grant.proofMessage = "";
+
+        emit WorkRejected(_grantId);
+    }
+
+    function cancelGrant(uint256 _grantId) external nonReentrant {
+        Grant storage grant = grants[_grantId];
+        if (grant.amount == 0) revert GrantNotFound();
+        if (msg.sender != grant.sponsor) revert NotSponsor();
+        if (grant.status != GrantStatus.Created) revert InvalidGrantStatus();
+
+        uint256 refundAmount = grant.amount;
+
+        grant.status = GrantStatus.Cancelled;
+        grant.amount = 0;
+
+        (bool success, ) = grant.sponsor.call{value: refundAmount}("");
+        if (!success) revert TransferFailed();
+
+        emit GrantCancelled(_grantId, grant.sponsor, refundAmount);
     }
 
     //function to get info on a specific grant
@@ -134,9 +195,11 @@ contract BlindGrantEscrow {
         uint256 groupId,
         string memory metadataURI,
         GrantStatus status,
-        address workerPayoutAddress
+        address workerPayoutAddress,
+        string memory proofMessage
     ) {
         Grant memory g = grants[_grantId];
-        return (g.sponsor, g.amount, g.groupId, g.metadataURI, g.status, g.workerPayoutAddress);
+        if (g.sponsor == address(0)) revert GrantNotFound();
+        return (g.sponsor, g.amount, g.groupId, g.metadataURI, g.status, g.workerPayoutAddress, g.proofMessage);
     }
 }

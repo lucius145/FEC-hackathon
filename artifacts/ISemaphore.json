@@ -38,8 +38,8 @@
 		"gasEstimates": null,
 		"methodIdentifiers": {
 			"addMember(uint256,uint256)": "1783efc3",
-			"createGroup(address)": "5c3f3b60",
-			"verifyProof(uint256,(uint256,uint256,uint256,uint256,uint256,uint256[8]))": "456f4188"
+			"createGroup()": "575185ed",
+			"validateProof(uint256,(uint256,uint256,uint256,uint256,uint256,uint256[8]))": "d0d898dd"
 		}
 	},
 	"abi": [
@@ -62,13 +62,7 @@
 			"type": "function"
 		},
 		{
-			"inputs": [
-				{
-					"internalType": "address",
-					"name": "admin",
-					"type": "address"
-				}
-			],
+			"inputs": [],
 			"name": "createGroup",
 			"outputs": [
 				{
@@ -125,14 +119,8 @@
 					"type": "tuple"
 				}
 			],
-			"name": "verifyProof",
-			"outputs": [
-				{
-					"internalType": "bool",
-					"name": "",
-					"type": "bool"
-				}
-			],
+			"name": "validateProof",
+			"outputs": [],
 			"stateMutability": "nonpayable",
 			"type": "function"
 		}
