@@ -15,7 +15,619 @@
         </button>
     </header>
 
+    <div class="w-full max-w-4xl bg-gray-800 rounded-xl p-6 shadow-xl"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlindGrant - ZK Escrow Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-6">
+
+    <header class="w-full max-w-4xl flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+        <h1 class="text-2xl font-bold text-indigo-400">🛡️ BlindGrant Portal</h1>
+        <button id="connectBtn" onclick="connectWallet()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg font-medium transition">
+            Connect Wallet
+        </button>
+    </header>
+
     <div class="w-full max-w-4xl bg-gray-800 rounded-xl p-6 shadow-xl">
+        <div class="flex border-b border-gray-700 mb-6">
+            <button id="sponsorTabBtn" onclick="switchTab('sponsor')" class="py-2 px-6 font-semibold border-b-2 border-indigo-500 text-indigo-400">
+                Sponsor Dashboard
+            </button>
+            <button id="workerTabBtn" onclick="switchTab('worker')" class="py-2 px-6 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">
+                Worker Portal
+            </button>
+        </div>
+
+        <!-- ============ SPONSOR VIEW ============ -->
+        <div id="sponsorView" class="space-y-8">
+            <div>
+                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 mb-4">Create Escrowed Grant</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Task Details Link / Metadata URI</label>
+                        <input type="text" id="metadataUriInput" placeholder="https://github.com/... or ipfs://..." class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Grant Reward Amount (ETH)</label>
+                        <input type="number" step="0.01" id="ethAmountInput" placeholder="0.1" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <button onclick="createGrant()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition">
+                        Fund & Create Grant
+                    </button>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-700">
+                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 mb-4">Manage a Grant</h2>
+                <div class="space-y-4">
+                    <div class="flex gap-3">
+                        <input type="number" id="manageGrantId" placeholder="Grant ID" class="flex-1 bg-gray-700 text-white p-3 rounded-lg border border-gray-600">
+                        <button onclick="fetchManageGrantStatus()" class="bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-lg font-medium transition">
+                            Load Status
+                        </button>
+                    </div>
+
+                    <div id="manageGrantCard" class="hidden bg-gray-900 p-4 rounded-lg border border-indigo-500/30 space-y-1 text-sm text-gray-300">
+                        <div class="flex justify-between items-center mb-2">
+                            <p class="text-gray-400 font-medium">Grant Status</p>
+                            <button onclick="fetchManageGrantStatus()" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1 rounded-md transition">
+                                🔄 Refresh
+                            </button>
+                        </div>
+                        <p>Status: <span id="manageGrantStatus" class="text-white font-semibold"></span></p>
+                        <p>Amount held: <span id="manageGrantAmount" class="text-indigo-400 font-semibold"></span> ETH</p>
+                        <p>Payout address on file: <span id="manageGrantPayout" class="text-white font-mono"></span></p>
+                        <p>Work proof link: <a id="manageGrantProofLink" href="#" target="_blank" class="text-indigo-400 underline"></a></p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="approvePayout()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold transition">
+                            Approve Payout
+                        </button>
+                        <button onclick="rejectWork()" class="bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-lg font-semibold transition">
+                            Reject Work
+                        </button>
+                        <button onclick="cancelGrant()" class="bg-red-700 hover:bg-red-800 text-white py-3 rounded-lg font-semibold transition">
+                            Cancel & Refund
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500">
+                        Approve pays the worker on file. Reject reopens the grant for a new submission
+                        (only works while status is "Work Submitted"). Cancel refunds you and only works
+                        before anyone has submitted work.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ WORKER VIEW ============ -->
+        <div id="workerView" class="hidden space-y-8">
+
+            <div>
+                <div class="flex justify-between items-center border-b border-gray-700 pb-2 mb-4">
+                    <h2 class="text-xl font-semibold">Available Grants</h2>
+                    <button onclick="browseGrants()" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg text-sm font-medium transition">
+                        Refresh List
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mb-3">
+                    Pulled from this contract's on-chain history. Only grants still open for
+                    registration (status "Created") are shown — a grant with a submission already
+                    in review or completed won't accept new joins.
+                </p>
+                <div id="grantsBrowseList" class="space-y-2">
+                    <p class="text-gray-500 text-sm">Connect your wallet, then click "Refresh List".</p>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-700">
+                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 mb-4">Find a Grant</h2>
+                <div class="space-y-4 bg-gray-750 p-4 rounded-lg border border-gray-700">
+                    <div class="flex gap-3">
+                        <input type="number" id="searchGrantId" placeholder="Enter Grant ID (e.g. 1)" class="flex-1 bg-gray-700 text-white p-3 rounded-lg border border-gray-600">
+                        <button onclick="fetchGrantDetails()" class="bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-lg font-medium transition">
+                            View Details
+                        </button>
+                    </div>
+
+                    <div id="grantDisplayCard" class="hidden bg-gray-900 p-4 rounded-lg border border-indigo-500/30 space-y-2">
+                        <div id="grantPayoutConfirmation" class="hidden bg-emerald-900/40 border border-emerald-600 text-emerald-300 text-sm rounded-lg p-3 mb-1">
+                            ✅ <span id="grantPayoutConfirmationText"></span>
+                        </div>
+                        <p class="text-sm text-gray-400">Grant ID: <span id="cardGrantId" class="text-white font-semibold"></span></p>
+                        <p class="text-sm text-gray-400">Status: <span id="cardGrantStatus" class="text-white font-semibold"></span></p>
+                        <p class="text-sm text-gray-400">Reward: <span id="cardGrantAmount" class="text-indigo-400 font-semibold"></span> ETH</p>
+                        <p class="text-sm text-gray-400">
+                            Task Link:
+                            <a id="cardGrantLink" href="#" target="_blank" class="text-indigo-400 underline font-medium hover:text-indigo-300">
+                                Open Task Brief / Link ↗
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-700">
+                <h3 class="text-lg font-medium text-gray-200 mb-3">1. Your Anonymous Identity</h3>
+                <p class="text-xs text-gray-500 mb-3">
+                    Generated locally from a wallet signature and cached in this browser. Your private key
+                    never leaves your machine — only the public commitment below gets published.
+                </p>
+                <button onclick="loadIdentity()" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition mb-3">
+                    Generate / Load Identity
+                </button>
+                <div id="identityDisplay" class="hidden bg-gray-900 p-3 rounded-lg border border-gray-700 text-xs font-mono text-gray-400 break-all"></div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-700">
+                <h3 class="text-lg font-medium text-gray-200 mb-3">2. Join Group & Register</h3>
+                <input type="number" id="joinGrantId" placeholder="Grant ID to Join" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 mb-3">
+                <button onclick="joinGrantGroup()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold transition">
+                    Join Group
+                </button>
+                <p class="text-xs text-gray-500 mt-2">Uses the identity generated above. Requires an identity to be loaded first.</p>
+            </div>
+
+            <div class="pt-4 border-t border-gray-700">
+                <h3 class="text-lg font-medium text-gray-200 mb-3">3. Submit Work</h3>
+                <div class="space-y-3">
+                    <input type="number" id="submitGrantId" placeholder="Grant ID" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600">
+                    <input type="text" id="workProofUriInput" placeholder="Link to work proof (GitHub commit, IPFS, etc.)" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Payout Address</label>
+                        <input type="text" id="payoutAddressInput" placeholder="0x..." class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600">
+                        <p class="text-xs text-gray-500 mt-1">
+                            Defaults to your connected wallet, but can be any address you control. This
+                            address is baked into the proof itself, so nobody watching the mempool can
+                            swap it out and steal the payout.
+                        </p>
+                    </div>
+                    <button onclick="submitWork()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition">
+                        Generate Proof & Submit
+                    </button>
+                    <p id="proofStatus" class="text-xs text-gray-500"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Some ZK libraries (via Semaphore's dependencies) expect a Node-style
+        // `global`, which browsers don't have. Cheap, harmless insurance.
+        if (typeof window.global === "undefined") window.global = window;
+
+        // Only ethers is imported statically. Wallet connection must work
+        // even if the Semaphore library below fails to load — it's a much
+        // heavier package (pulls in snarkjs and WASM) and CDN resolution
+        // for it can fail in ways plain ethers won't. Semaphore is loaded
+        // lazily, only inside the functions that actually need it, so a
+        // problem there can't take down Connect Wallet or anything else.
+        import { BrowserProvider, Contract, formatEther, parseEther } from "https://esm.sh/ethers@6.7.0";
+
+        let semaphoreLib = null;
+        async function loadSemaphoreLib() {
+            if (semaphoreLib) return semaphoreLib;
+            try {
+                semaphoreLib = await import("https://esm.sh/@semaphore-protocol/core@4.14.3");
+                return semaphoreLib;
+            } catch (err) {
+                console.error("Failed to load @semaphore-protocol/core:", err);
+                throw new Error("Could not load the Semaphore library from the CDN. Check your connection and the browser console for details.");
+            }
+        }
+
+        let provider, signer, contract, identity;
+
+        const CONTRACT_ADDRESS = "0xBB8A82De585515789E848C2E90870ded5660D5e6";
+
+  
+        const DEPLOYMENT_BLOCK = 11459972; 
+
+        const MAX_LOG_RANGE = 9999;
+        async function queryFilterChunked(filter, fromBlock = DEPLOYMENT_BLOCK) {
+            const latest = await provider.getBlockNumber();
+            let events = [];
+            for (let start = fromBlock; start <= latest; start += MAX_LOG_RANGE + 1) {
+                const end = Math.min(start + MAX_LOG_RANGE, latest);
+                const chunk = await contract.queryFilter(filter, start, end);
+                events = events.concat(chunk);
+            }
+            return events;
+        }
+
+        // Matches BlindGrantEscrow.sol exactly. submitWork's second argument
+        // is the SemaphoreProof struct as a tuple.
+        const CONTRACT_ABI = [
+            "function createGrant(string memory _metadataURI) external payable returns (uint256)",
+            "function joinGrantGroup(uint256 _grantId, uint256 _identityCommitment) external",
+            "function submitWork(uint256 _grantId, tuple(uint256 merkleTreeDepth, uint256 merkleTreeRoot, uint256 nullifier, uint256 message, uint256 scope, uint256[8] points) _proof, address _payoutAddress, string calldata _workProofURI) external",
+            "function approvePayout(uint256 _grantId) external",
+            "function rejectWork(uint256 _grantId) external",
+            "function cancelGrant(uint256 _grantId) external",
+            "function getGrant(uint256 _grantId) external view returns (address sponsor, uint256 amount, uint256 groupId, string memory metadataURI, uint8 status, address workerPayoutAddress, string memory proofMessage)",
+            "event WorkerJoined(uint256 indexed grantId, uint256 identityCommitment)",
+            "event GrantCreated(uint256 indexed grantId, address indexed sponsor, uint256 amount, uint256 groupId, string metadataURI)"
+        ];
+
+        const STATUS_LABELS = ["Created", "Work Submitted", "Completed", "Cancelled"];
+
+        // The circuit is compiled per Merkle depth, and each depth has its
+        // own multi-megabyte proving key. Pin it so the browser doesn't
+        // silently fetch a new key whenever a group crosses a power of two.
+        // Depth 12 covers 4096 members, same choice as the Semaphore guide.
+        const DEPTH = 12;
+        const ARTIFACTS = {
+            wasm: "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-12.wasm",
+            zkey: "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-12.zkey"
+        };
+        const LOGIN_MESSAGE = "Sign in to BlindGrant. This never leaves your browser.";
+
+        window.connectWallet = async function () {
+            if (!window.ethereum) return alert("Please install MetaMask!");
+            provider = new BrowserProvider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = await provider.getSigner();
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+            const address = await signer.getAddress();
+            document.getElementById("connectBtn").innerText = address.slice(0, 6) + "..." + address.slice(-4);
+
+            // Pre-fill the payout address with the connected wallet; the
+            // worker can still overwrite it with any address they control.
+            const payoutInput = document.getElementById("payoutAddressInput");
+            if (payoutInput && !payoutInput.value) payoutInput.value = address;
+
+            browseGrants();
+        };
+
+        window.switchTab = function (tab) {
+            const sponsorView = document.getElementById("sponsorView");
+            const workerView = document.getElementById("workerView");
+            const sponsorBtn = document.getElementById("sponsorTabBtn");
+            const workerBtn = document.getElementById("workerTabBtn");
+
+            if (tab === "sponsor") {
+                sponsorView.classList.remove("hidden");
+                workerView.classList.add("hidden");
+                sponsorBtn.className = "py-2 px-6 font-semibold border-b-2 border-indigo-500 text-indigo-400";
+                workerBtn.className = "py-2 px-6 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white";
+            } else {
+                sponsorView.classList.add("hidden");
+                workerView.classList.remove("hidden");
+                workerBtn.className = "py-2 px-6 font-semibold border-b-2 border-indigo-500 text-indigo-400";
+                sponsorBtn.className = "py-2 px-6 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white";
+            }
+        };
+
+        // ---------- Sponsor actions ----------
+
+        window.createGrant = async function () {
+            if (!contract) return alert("Please connect wallet first!");
+            const metadataUri = document.getElementById("metadataUriInput").value;
+            const ethAmount = document.getElementById("ethAmountInput").value;
+            if (!metadataUri || !ethAmount) return alert("Please fill in all fields.");
+
+            try {
+                const tx = await contract.createGrant(metadataUri, { value: parseEther(ethAmount) });
+                alert("Transaction submitted. Waiting for confirmation...");
+                await tx.wait();
+                alert("Grant created successfully!");
+            } catch (err) {
+                console.error(err);
+                alert("Transaction failed: " + (err.shortMessage ?? err.message));
+            }
+        };
+
+        window.fetchManageGrantStatus = async function () {
+            if (!contract) return alert("Please connect wallet first!");
+            const grantId = document.getElementById("manageGrantId").value;
+            if (!grantId) return alert("Enter a Grant ID.");
+
+            try {
+                const g = await contract.getGrant(grantId);
+                document.getElementById("manageGrantStatus").innerText = STATUS_LABELS[Number(g.status)];
+                document.getElementById("manageGrantAmount").innerText = formatEther(g.amount);
+                document.getElementById("manageGrantPayout").innerText =
+                    g.workerPayoutAddress === "0x0000000000000000000000000000000000000000"
+                        ? "none yet"
+                        : g.workerPayoutAddress;
+
+                const linkElem = document.getElementById("manageGrantProofLink");
+                if (g.proofMessage) {
+                    linkElem.href = g.proofMessage.startsWith("http") ? g.proofMessage : "https://" + g.proofMessage;
+                    linkElem.innerText = g.proofMessage;
+                } else {
+                    linkElem.href = "#";
+                    linkElem.innerText = "none yet";
+                }
+
+                document.getElementById("manageGrantCard").classList.remove("hidden");
+            } catch (err) {
+                console.error(err);
+                // getGrant now reverts (GrantNotFound) instead of returning zeros.
+                alert("Could not load that grant. It may not exist.");
+            }
+        };
+
+        window.approvePayout = async function () {
+            const grantId = document.getElementById("manageGrantId").value;
+            if (!grantId) return alert("Load a Grant ID first.");
+            try {
+                const tx = await contract.approvePayout(grantId);
+                alert("Approving payout...");
+                await tx.wait();
+                alert("Payout sent.");
+                fetchManageGrantStatus();
+            } catch (err) {
+                console.error(err);
+                alert("Failed: " + (err.shortMessage ?? err.message));
+            }
+        };
+
+        window.rejectWork = async function () {
+            const grantId = document.getElementById("manageGrantId").value;
+            if (!grantId) return alert("Load a Grant ID first.");
+            try {
+                const tx = await contract.rejectWork(grantId);
+                alert("Rejecting submission...");
+                await tx.wait();
+                alert("Grant reopened for a new submission.");
+                fetchManageGrantStatus();
+            } catch (err) {
+                console.error(err);
+                alert("Failed: " + (err.shortMessage ?? err.message));
+            }
+        };
+
+        window.cancelGrant = async function () {
+            const grantId = document.getElementById("manageGrantId").value;
+            if (!grantId) return alert("Load a Grant ID first.");
+            try {
+                const tx = await contract.cancelGrant(grantId);
+                alert("Cancelling and refunding...");
+                await tx.wait();
+                alert("Grant cancelled, funds refunded.");
+                fetchManageGrantStatus();
+            } catch (err) {
+                console.error(err);
+                alert("Failed: " + (err.shortMessage ?? err.message));
+            }
+        };
+
+        // ---------- Worker actions ----------
+
+        window.browseGrants = async function () {
+            if (!contract) return alert("Please connect wallet first!");
+            const listEl = document.getElementById("grantsBrowseList");
+            listEl.innerHTML = '<p class="text-gray-500 text-sm">Loading...</p>';
+
+            try {
+                // GrantCreated only tells us what a grant looked like at
+                // creation time, not its current status, so we re-check
+                // each one with getGrant before deciding whether to show it.
+                const events = await queryFilterChunked(contract.filters.GrantCreated());
+                if (events.length === 0) {
+                    listEl.innerHTML = '<p class="text-gray-500 text-sm">No grants have been created yet.</p>';
+                    return;
+                }
+
+                const rows = await Promise.all(events.map(async (e) => {
+                    const grantId = e.args.grantId;
+                    try {
+                        const g = await contract.getGrant(grantId);
+                        return { grantId, metadataURI: g.metadataURI, amount: g.amount, status: Number(g.status) };
+                    } catch (err) {
+                        return null; // shouldn't happen, but don't let one bad read break the list
+                    }
+                }));
+
+                const open = rows.filter((r) => r && r.status === 0); // 0 = Created, i.e. still open
+                if (open.length === 0) {
+                    listEl.innerHTML = '<p class="text-gray-500 text-sm">No open grants right now — check back later.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = "";
+                open.forEach((r) => {
+                    const link = r.metadataURI.startsWith("http") ? r.metadataURI : "https://" + r.metadataURI;
+                    const row = document.createElement("div");
+                    row.className = "bg-gray-900 p-3 rounded-lg border border-gray-700 flex justify-between items-center gap-3";
+                    row.innerHTML = `
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-400">
+                                Grant #<span class="text-white font-semibold">${r.grantId}</span>
+                                &middot; <span class="text-indigo-400 font-semibold">${formatEther(r.amount)} ETH</span>
+                            </p>
+                            <a href="${link}" target="_blank" class="text-indigo-400 underline text-sm truncate block">${r.metadataURI || "No link provided"}</a>
+                        </div>
+                        <button class="shrink-0 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-medium transition" onclick="selectGrant(${r.grantId})">
+                            Select
+                        </button>
+                    `;
+                    listEl.appendChild(row);
+                });
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<p class="text-red-400 text-sm">Failed to load grants. Check the console.</p>';
+            }
+        };
+
+        // Fills the grant ID into every downstream field and loads its
+        // details, so picking a grant from the list carries through the
+        // whole join/submit flow below.
+        window.selectGrant = function (grantId) {
+            document.getElementById("searchGrantId").value = grantId;
+            document.getElementById("joinGrantId").value = grantId;
+            document.getElementById("submitGrantId").value = grantId;
+            fetchGrantDetails();
+        };
+
+        window.fetchGrantDetails = async function () {
+            if (!contract) return alert("Please connect wallet first!");
+            const grantId = document.getElementById("searchGrantId").value;
+            if (!grantId) return alert("Enter a Grant ID.");
+
+            try {
+                const g = await contract.getGrant(grantId);
+                document.getElementById("cardGrantId").innerText = grantId;
+                document.getElementById("cardGrantStatus").innerText = STATUS_LABELS[Number(g.status)];
+                document.getElementById("cardGrantAmount").innerText = formatEther(g.amount);
+
+                const linkElem = document.getElementById("cardGrantLink");
+                linkElem.href = g.metadataURI.startsWith("http") ? g.metadataURI : "https://" + g.metadataURI;
+                linkElem.innerText = g.metadataURI || "No link provided";
+
+                // Show a payout confirmation banner once the grant is
+                // Completed and the funds went to the currently connected
+                // wallet. approvePayout() zeroes out grant.amount on
+                // completion, so we can't restate how much was sent here —
+                // just confirm that it was.
+                const confirmBanner = document.getElementById("grantPayoutConfirmation");
+                const confirmText = document.getElementById("grantPayoutConfirmationText");
+                confirmBanner.classList.add("hidden");
+                if (Number(g.status) === 2 && signer) {
+                    const myAddress = await signer.getAddress();
+                    if (g.workerPayoutAddress.toLowerCase() === myAddress.toLowerCase()) {
+                        confirmText.innerText = "Payout complete — the reward has been transferred to your account (" + myAddress.slice(0, 6) + "..." + myAddress.slice(-4) + ").";
+                        confirmBanner.classList.remove("hidden");
+                    }
+                }
+
+                document.getElementById("grantDisplayCard").classList.remove("hidden");
+                document.getElementById("joinGrantId").value = grantId;
+                document.getElementById("submitGrantId").value = grantId;
+            } catch (err) {
+                console.error(err);
+                alert("Could not fetch grant details. Check the ID.");
+            }
+        };
+
+        window.loadIdentity = async function () {
+            if (!signer) return alert("Please connect wallet first!");
+
+            let Identity;
+            try {
+                ({ Identity } = await loadSemaphoreLib());
+            } catch (err) {
+                console.error(err);
+                return alert(err.message);
+            }
+
+            const address = await signer.getAddress();
+            const cacheKey = `blindgrant-identity:${address}`;
+
+            // Without this cache, MetaMask would prompt a signature on
+            // every page refresh.
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                identity = Identity.import(cached);
+            } else {
+                const signature = await signer.signMessage(LOGIN_MESSAGE);
+                identity = new Identity(signature);
+                localStorage.setItem(cacheKey, identity.export());
+            }
+
+            const el = document.getElementById("identityDisplay");
+            el.innerText = "Commitment (safe to publish): " + identity.commitment.toString();
+            el.classList.remove("hidden");
+        };
+
+        window.joinGrantGroup = async function () {
+            if (!contract) return alert("Please connect wallet first!");
+            if (!identity) return alert("Generate/load your identity first.");
+            const grantId = document.getElementById("joinGrantId").value;
+            if (!grantId) return alert("Enter a Grant ID.");
+
+            try {
+                const tx = await contract.joinGrantGroup(grantId, identity.commitment);
+                alert("Transaction submitted...");
+                await tx.wait();
+                alert("Successfully joined grant group!");
+            } catch (err) {
+                console.error(err);
+                alert("Registration failed: " + (err.shortMessage ?? err.message));
+            }
+        };
+
+        window.submitWork = async function () {
+            if (!contract) return alert("Please connect wallet first!");
+            if (!identity) return alert("Generate/load your identity first.");
+
+            const grantId = document.getElementById("submitGrantId").value;
+            const workProofUri = document.getElementById("workProofUriInput").value;
+            const payoutAddress = document.getElementById("payoutAddressInput").value;
+            if (!grantId || !workProofUri || !payoutAddress) return alert("Please fill in all fields.");
+
+            const statusEl = document.getElementById("proofStatus");
+            let Group, generateProof;
+            try {
+                ({ Group, generateProof } = await loadSemaphoreLib());
+            } catch (err) {
+                console.error(err);
+                return alert(err.message);
+            }
+
+            try {
+                statusEl.innerText = "Reading grant and group members...";
+
+                // The contract itself doesn't store a member list — Semaphore
+                // does. WorkerJoined events are BlindGrant's own record of
+                // every commitment that ever joined this grant's group, so
+                // we rebuild the tree from those, the same way Part 5 of the
+                // guide rebuilds it from getMembers().
+                const grant = await contract.getGrant(grantId);
+                const filter = contract.filters.WorkerJoined(grantId);
+                const events = await queryFilterChunked(filter);
+                const commitments = events.map((e) => e.args.identityCommitment);
+                const group = new Group(commitments);
+
+                // Binds this proof to THIS grant (scope) and to the exact
+                // payout address being submitted (message), so the proof
+                // can't be replayed against another grant or hijacked by
+                // someone swapping in a different payout address.
+                const scope = grant.groupId;
+                const message = BigInt(payoutAddress);
+
+                statusEl.innerText = "Generating proof, this takes a moment...";
+                // Let the browser paint that message before hogging the CPU.
+                await new Promise((resolve) => setTimeout(resolve, 0));
+
+                const proof = await generateProof(identity, group, message, scope, DEPTH, ARTIFACTS);
+
+                statusEl.innerText = "Submitting to the contract...";
+                const tx = await contract.submitWork(
+                    grantId,
+                    {
+                        merkleTreeDepth: proof.merkleTreeDepth,
+                        merkleTreeRoot: proof.merkleTreeRoot,
+                        nullifier: proof.nullifier,
+                        message: proof.message,
+                        scope: proof.scope,
+                        points: proof.points
+                    },
+                    payoutAddress,
+                    workProofUri
+                );
+                await tx.wait();
+                statusEl.innerText = "Work submitted successfully.";
+                alert("Work submitted! The sponsor can now approve payout.");
+            } catch (err) {
+                console.error(err);
+                statusEl.innerText = "";
+                if (err.code === 4001 || err.code === "ACTION_REJECTED") {
+                    alert("Cancelled.");
+                    return;
+                }
+                alert("Submission failed: " + (err.shortMessage ?? err.message));
+            }
+        };
+    </script>
+</body>
+</html>
         <div class="flex border-b border-gray-700 mb-6">
             <button id="sponsorTabBtn" onclick="switchTab('sponsor')" class="py-2 px-6 font-semibold border-b-2 border-indigo-500 text-indigo-400">
                 Sponsor Dashboard
