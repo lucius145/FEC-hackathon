@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.20+commit.a1b79de6"
+		"version": "0.8.34+commit.80d5c536"
 	},
 	"language": "Solidity",
 	"output": {
@@ -82,7 +82,7 @@
 								"type": "uint256[8]"
 							}
 						],
-						"internalType": "struct ISemaphore.SemaphoreProof",
+						"internalType": "struct SemaphoreProof",
 						"name": "proof",
 						"type": "tuple"
 					}
@@ -114,7 +114,7 @@
 		"compilationTarget": {
 			"src.sol": "ISemaphore"
 		},
-		"evmVersion": "shanghai",
+		"evmVersion": "osaka",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -127,11 +127,11 @@
 	},
 	"sources": {
 		"src.sol": {
-			"keccak256": "0x5fccd96618d0ecc09f9287dbe126e16cfd980a5b5f3304209e961c22bb8228a6",
+			"keccak256": "0x68d51494e37eae0f23892914b9d2394716339230651bf46e4ae415f381f5ec3b",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://84ecec8b99a5f96a73c8bd318debd369dc3e820f71b134625a62a32bb5b0293c",
-				"dweb:/ipfs/QmSKoSGZf2xrb17eBtdk9Lw7xVhsCWpkLdUyDNm1KQ7mvB"
+				"bzz-raw://08ed5c59878f3a1e91094a9d4b2a6a1fe566cda1eb0a71ec8b3de6477e21e61a",
+				"dweb:/ipfs/QmWP8TKU6yurPwjdHcb2DTU23yGf5Q8cNrxHs2pKqqTqkT"
 			]
 		}
 	},

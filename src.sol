@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+//default interface to implement semaphore
 interface ISemaphore {
     function createGroup(address admin) external returns (uint256 groupId);
     function addMember(uint256 groupId, uint256 identityCommitment) external;
@@ -17,10 +18,19 @@ struct SemaphoreProof {
 }
 
 contract BlindGrantEscrow {
+
+    // Custom Errors 
+    error InvalidAmount();
+    error GrantNotFound();
+    error NullifierAlreadyUsed();
+    error TransferFailed();
+
     ISemaphore public immutable semaphore;
 
+    //states to define grant status
     enum GrantStatus { Created, WorkSubmitted, Completed }
 
+    //data structure to implement a grant
     struct Grant {
         address payable sponsor;
         uint256 amount;
@@ -31,8 +41,10 @@ contract BlindGrantEscrow {
         address workerPayoutAddress;
     }
 
-    uint256 public grantCount;
+    uint256 private grantCount;
+    //to map grant to a unique number
     mapping(uint256 => Grant) private grants;
+
     mapping(uint256 => bool) public usedNullifiers;
 
     event GrantCreated(
@@ -46,11 +58,12 @@ contract BlindGrantEscrow {
     event WorkSubmitted(uint256 indexed grantId, uint256 nullifier);
     event GrantCompleted(uint256 indexed grantId, address payoutAddress);
 
+    //to initialize semaphore by providing on chain address of semaphore V4
     constructor(address _semaphoreAddress) {
         semaphore = ISemaphore(_semaphoreAddress);
     }
 
-    /// @notice Sponsor creates an escrowed grant with an attached task link/URI
+    //function to create a new grant 
     function createGrant(string memory _metadataURI) external payable returns (uint256) {
         require(msg.value > 0, "Grant amount must be greater than 0");
 
@@ -71,7 +84,7 @@ contract BlindGrantEscrow {
         return grantCount;
     }
 
-    /// @notice Worker registers into the Semaphore group for a grant
+    //function to enable workers to join a grant group
     function joinGrantGroup(uint256 _grantId, uint256 _identityCommitment) external {
         Grant storage grant = grants[_grantId];
         require(grant.amount > 0, "Grant does not exist");
@@ -81,7 +94,7 @@ contract BlindGrantEscrow {
         emit WorkerJoined(_grantId, _identityCommitment);
     }
 
-    /// @notice Submit ZK Proof of completed work
+    //function to enable worker to submit their proposed work 
     function submitWork(
         uint256 _grantId,
         SemaphoreProof calldata _proof,
@@ -101,19 +114,20 @@ contract BlindGrantEscrow {
         emit WorkSubmitted(_grantId, _proof.nullifier);
     }
 
-    /// @notice Sponsor approves payout to worker's address
+    //function to transfer funds(eth originally spent by the sponsor)
     function approvePayout(uint256 _grantId) external {
         Grant storage grant = grants[_grantId];
         require(msg.sender == grant.sponsor, "Only sponsor can approve");
         require(grant.status == GrantStatus.WorkSubmitted, "No work submitted yet");
 
         grant.status = GrantStatus.Completed;
-        payable(grant.workerPayoutAddress).transfer(grant.amount);
+        (bool success, ) = payable(grant.workerPayoutAddress).call{value: grant.amount}("");
+        if (!success) revert TransferFailed();
 
         emit GrantCompleted(_grantId, grant.workerPayoutAddress);
     }
 
-    /// @notice Public getter for grant details including metadataURI
+    //function to get info on a specific grant
     function getGrant(uint256 _grantId) external view returns (
         address sponsor,
         uint256 amount,

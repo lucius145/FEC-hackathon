@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.20+commit.a1b79de6"
+		"version": "0.8.34+commit.80d5c536"
 	},
 	"language": "Solidity",
 	"output": {
@@ -28,16 +28,6 @@
 			},
 			{
 				"inputs": [],
-				"name": "InvalidStatus",
-				"type": "error"
-			},
-			{
-				"inputs": [],
-				"name": "InvalidZKProof",
-				"type": "error"
-			},
-			{
-				"inputs": [],
 				"name": "NullifierAlreadyUsed",
 				"type": "error"
 			},
@@ -47,11 +37,6 @@
 				"type": "error"
 			},
 			{
-				"inputs": [],
-				"name": "Unauthorized",
-				"type": "error"
-			},
-			{
 				"anonymous": false,
 				"inputs": [
 					{
@@ -61,38 +46,13 @@
 						"type": "uint256"
 					},
 					{
-						"indexed": true,
+						"indexed": false,
 						"internalType": "address",
 						"name": "payoutAddress",
 						"type": "address"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
 					}
 				],
-				"name": "FundsReleased",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": true,
-						"internalType": "uint256",
-						"name": "grantId",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "refundAmount",
-						"type": "uint256"
-					}
-				],
-				"name": "GrantCancelled",
+				"name": "GrantCompleted",
 				"type": "event"
 			},
 			{
@@ -121,6 +81,12 @@
 						"internalType": "uint256",
 						"name": "groupId",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "metadataURI",
+						"type": "string"
 					}
 				],
 				"name": "GrantCreated",
@@ -140,15 +106,9 @@
 						"internalType": "uint256",
 						"name": "nullifier",
 						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "proofMessage",
-						"type": "uint256"
 					}
 				],
-				"name": "WorkSubmittedAnonymously",
+				"name": "WorkSubmitted",
 				"type": "event"
 			},
 			{
@@ -167,7 +127,7 @@
 						"type": "uint256"
 					}
 				],
-				"name": "WorkerJoinedGroup",
+				"name": "WorkerJoined",
 				"type": "event"
 			},
 			{
@@ -178,7 +138,7 @@
 						"type": "uint256"
 					}
 				],
-				"name": "approveAndReleaseFunds",
+				"name": "approvePayout",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -186,23 +146,16 @@
 			{
 				"inputs": [
 					{
-						"internalType": "uint256",
-						"name": "_grantId",
-						"type": "uint256"
+						"internalType": "string",
+						"name": "_metadataURI",
+						"type": "string"
 					}
 				],
-				"name": "cancelGrant",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [],
 				"name": "createGrant",
 				"outputs": [
 					{
 						"internalType": "uint256",
-						"name": "grantId",
+						"name": "",
 						"type": "uint256"
 					}
 				],
@@ -220,64 +173,34 @@
 				"name": "getGrant",
 				"outputs": [
 					{
-						"components": [
-							{
-								"internalType": "uint256",
-								"name": "id",
-								"type": "uint256"
-							},
-							{
-								"internalType": "address",
-								"name": "sponsor",
-								"type": "address"
-							},
-							{
-								"internalType": "uint256",
-								"name": "amount",
-								"type": "uint256"
-							},
-							{
-								"internalType": "uint256",
-								"name": "groupId",
-								"type": "uint256"
-							},
-							{
-								"internalType": "enum BlindGrantEscrow.GrantStatus",
-								"name": "status",
-								"type": "uint8"
-							},
-							{
-								"internalType": "uint256",
-								"name": "submissionNullifier",
-								"type": "uint256"
-							},
-							{
-								"internalType": "uint256",
-								"name": "proofMessage",
-								"type": "uint256"
-							},
-							{
-								"internalType": "address payable",
-								"name": "workerPayoutAddress",
-								"type": "address"
-							}
-						],
-						"internalType": "struct BlindGrantEscrow.Grant",
-						"name": "",
-						"type": "tuple"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "grantCount",
-				"outputs": [
+						"internalType": "address",
+						"name": "sponsor",
+						"type": "address"
+					},
 					{
 						"internalType": "uint256",
-						"name": "",
+						"name": "amount",
 						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "groupId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "metadataURI",
+						"type": "string"
+					},
+					{
+						"internalType": "enum BlindGrantEscrow.GrantStatus",
+						"name": "status",
+						"type": "uint8"
+					},
+					{
+						"internalType": "address",
+						"name": "workerPayoutAddress",
+						"type": "address"
 					}
 				],
 				"stateMutability": "view",
@@ -354,12 +277,12 @@
 								"type": "uint256[8]"
 							}
 						],
-						"internalType": "struct ISemaphore.SemaphoreProof",
+						"internalType": "struct SemaphoreProof",
 						"name": "_proof",
 						"type": "tuple"
 					},
 					{
-						"internalType": "address payable",
+						"internalType": "address",
 						"name": "_payoutAddress",
 						"type": "address"
 					}
@@ -367,6 +290,25 @@
 				"name": "submitWork",
 				"outputs": [],
 				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "usedNullifiers",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			}
 		],
@@ -385,7 +327,7 @@
 		"compilationTarget": {
 			"src.sol": "BlindGrantEscrow"
 		},
-		"evmVersion": "shanghai",
+		"evmVersion": "osaka",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -398,11 +340,11 @@
 	},
 	"sources": {
 		"src.sol": {
-			"keccak256": "0x5fccd96618d0ecc09f9287dbe126e16cfd980a5b5f3304209e961c22bb8228a6",
+			"keccak256": "0x68d51494e37eae0f23892914b9d2394716339230651bf46e4ae415f381f5ec3b",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://84ecec8b99a5f96a73c8bd318debd369dc3e820f71b134625a62a32bb5b0293c",
-				"dweb:/ipfs/QmSKoSGZf2xrb17eBtdk9Lw7xVhsCWpkLdUyDNm1KQ7mvB"
+				"bzz-raw://08ed5c59878f3a1e91094a9d4b2a6a1fe566cda1eb0a71ec8b3de6477e21e61a",
+				"dweb:/ipfs/QmWP8TKU6yurPwjdHcb2DTU23yGf5Q8cNrxHs2pKqqTqkT"
 			]
 		}
 	},
