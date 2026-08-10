@@ -196,19 +196,11 @@
 
         let provider, signer, contract, identity;
 
-        // Update with your deployed contract address.
-        const CONTRACT_ADDRESS = "0xYourDeployedContractAddressHere";
+        const CONTRACT_ADDRESS = "0xBB8A82De585515789E848C2E90870ded5660D5e6";
 
-        // Set this to the block your contract was deployed at (check the
-        // contract's "Contract Creation" transaction on Sepolia Etherscan).
-        // Querying events from block 0 scans the whole chain and trips the
-        // 10,000-block range limit most public RPC endpoints enforce.
-        const DEPLOYMENT_BLOCK = 0; // TODO: replace with your real deployment block
+  
+        const DEPLOYMENT_BLOCK = 11459972; 
 
-        // Splits a log query into chunks small enough for RPC providers
-        // that cap eth_getLogs to a limited block range (commonly 10,000).
-        // Falls back to this even if DEPLOYMENT_BLOCK is set correctly, so
-        // the app doesn't break again once enough blocks have passed.
         const MAX_LOG_RANGE = 9999;
         async function queryFilterChunked(filter, fromBlock = DEPLOYMENT_BLOCK) {
             const latest = await provider.getBlockNumber();
